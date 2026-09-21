@@ -24,3 +24,9 @@ erp:
     base-url: ${ERP_BASE_URL:http://localhost:8081}
     connect-timeout: ${ERP_CONNECT_TIMEOUT:2s}
     read-timeout: ${ERP_READ_TIMEOUT:3s}
+
+orders:
+  processing:
+    scheduling-enabled: ${ORDER_PROCESSING_SCHEDULING_ENABLED:true}
+    fixed-delay: ${ORDER_PROCESSING_FIXED_DELAY:60000}
+    initial-delay: ${ORDER_PROCESSING_INITIAL_DELAY:60000}
