@@ -1,0 +1,607 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Pedidos Integrados — Order Service e ERP",
+    "version": "1.0.0",
+    "description": "Contrato da implementação demonstrativa. Sem autenticação. Datas em ISO 8601 com fuso. Portas padrão; ajuste servers se alterar o Compose. Versão do documento, não uma rota /v1. Consulte README.md e docs/API.md."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:18080",
+      "description": "Order Service via Docker"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Order Service via Maven/IDE"
+    },
+    {
+      "url": "http://localhost:8088",
+      "description": "Proxy do frontend Docker para /orders"
+    }
+  ],
+  "security": [],
+  "tags": [
+    {
+      "name": "Pedidos",
+      "description": "Cadastro, consulta e integração de pedidos."
+    },
+    {
+      "name": "ERP",
+      "description": "Simulador externo; usa suas próprias URLs de servidor."
+    }
+  ],
+  "paths": {
+    "/orders": {
+      "post": {
+        "operationId": "createOrder",
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Criar pedido",
+        "description": "Persiste como PENDING. Não chama o ERP no cadastro. Duplicidade de externalId retorna 409.",
+        "responses": {
+          "201": {
+            "description": "Pedido criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validação ou JSON inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "externalId duplicado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha não tratada ou de infraestrutura; o corpo pode usar o formato padrão do Spring, sem contrato estável."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderInput"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listOrders",
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Listar pedidos",
+        "description": "Ordenados por createdAt decrescente. Sem paginação, filtros ou rota GET /orders/{id}.",
+        "responses": {
+          "200": {
+            "description": "Lista de pedidos, possivelmente vazia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderResponse"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha não tratada ou de infraestrutura; o corpo pode usar o formato padrão do Spring, sem contrato estável."
+          }
+        }
+      }
+    },
+    "/orders/process": {
+      "post": {
+        "operationId": "processOrders",
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Processar lote pendente",
+        "description": "Sem corpo. Aguarda o lote terminar; até 20 tarefas e 4 workers por padrão. Inclui pedidos de outros usuários. Falhas de integração entram em failed com HTTP 200; falhas inesperadas podem produzir HTTP 500. O scheduler pode ter consumido os pedidos antes.",
+        "responses": {
+          "200": {
+            "description": "Resultado somente desta execução",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessingResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha não tratada ou de infraestrutura; o corpo pode usar o formato padrão do Spring, sem contrato estável."
+          }
+        }
+      }
+    },
+    "/orders/{id}/retry": {
+      "post": {
+        "operationId": "retryOrder",
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Editar e reenfileirar pedido com erro",
+        "description": "Exige status ERROR, version atual e confirmedNotIntegrated=true. Retorna PENDING; não envia ao ERP. Preserva id, createdAt, attemptCount e lastError até novo processamento.",
+        "responses": {
+          "200": {
+            "description": "Pedido reenfileirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Corpo inválido ou confirmação ausente/false",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pedido inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Versão desatualizada, estado não elegível ou externalId duplicado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha não tratada ou de infraestrutura; o corpo pode usar o formato padrão do Spring, sem contrato estável."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryOrderRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID interno retornado pelo Order Service, não o externalId.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "erpHealth",
+        "tags": [
+          "ERP"
+        ],
+        "summary": "Consultar saúde do ERP",
+        "description": "Indica que a aplicação ERP atende à chamada; não verifica o banco do Order Service.",
+        "responses": {
+          "200": {
+            "description": "ERP disponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "http://localhost:18081",
+          "description": "ERP via Docker"
+        },
+        {
+          "url": "http://localhost:8081",
+          "description": "ERP via Maven/IDE"
+        }
+      ]
+    },
+    "/erp/orders": {
+      "post": {
+        "operationId": "acceptErpOrder",
+        "tags": [
+          "ERP"
+        ],
+        "summary": "Enviar diretamente ao simulador ERP",
+        "description": "Não cria pedido no Order Service. Atraso padrão de 500 a 2000 ms. Prefixo FAIL- no externalId provoca 500 por padrão. Mesmo identificador e dados repetem a aceitação anterior; dados diferentes retornam 409. Idempotência em memória, perdida após reinício.",
+        "responses": {
+          "200": {
+            "description": "Pedido aceito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErpAcceptance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validação ou JSON inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErpError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Identificador aceito anteriormente com outros dados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErpError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha simulada de processamento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErpError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderInput"
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "http://localhost:18081",
+          "description": "ERP via Docker"
+        },
+        {
+          "url": "http://localhost:8081",
+          "description": "ERP via Maven/IDE"
+        }
+      ]
+    }
+  },
+  "components": {
+    "schemas": {
+      "OrderInput": {
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Obrigatório, não pode conter somente espaços. Único no Order Service; sem normalização automática."
+          },
+          "customerName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Obrigatório; não pode conter somente espaços."
+          },
+          "totalValue": {
+            "type": "number",
+            "minimum": 0.01,
+            "multipleOf": 0.01,
+            "description": "BigDecimal: no máximo 17 dígitos inteiros e 2 casas decimais. Não há arredondamento de entrada inválida."
+          }
+        },
+        "required": [
+          "externalId",
+          "customerName",
+          "totalValue"
+        ],
+        "example": {
+          "externalId": "DEMO-001",
+          "customerName": "Cliente de teste",
+          "totalValue": 125.5
+        }
+      },
+      "OrderResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "totalValue": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "SUCCESS",
+              "ERROR"
+            ]
+          },
+          "attemptCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Incrementado ao reservar o pedido para processamento."
+          },
+          "lastError": {
+            "type": "string",
+            "nullable": true,
+            "description": "Última falha de integração; pode permanecer após retry até a próxima reserva."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Controle de concorrência; obtenha o valor atual em GET /orders antes do retry."
+          }
+        },
+        "required": [
+          "id",
+          "externalId",
+          "customerName",
+          "totalValue",
+          "status",
+          "attemptCount",
+          "lastError",
+          "createdAt",
+          "updatedAt",
+          "version"
+        ],
+        "example": {
+          "id": 1,
+          "externalId": "DEMO-001",
+          "customerName": "Cliente de teste",
+          "totalValue": 125.5,
+          "status": "PENDING",
+          "attemptCount": 0,
+          "lastError": null,
+          "createdAt": "2026-09-21T12:00:00Z",
+          "updatedAt": "2026-09-21T12:00:00Z",
+          "version": 0
+        }
+      },
+      "RetryOrderRequest": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/OrderInput"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "confirmedNotIntegrated": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Confirmação humana de que o ERP não integrou o pedido. Timeout não comprova falha externa."
+          }
+        },
+        "required": [
+          "order",
+          "version",
+          "confirmedNotIntegrated"
+        ],
+        "example": {
+          "order": {
+            "externalId": "DEMO-CORRIGIDO-001",
+            "customerName": "Cliente de teste",
+            "totalValue": 125.5
+          },
+          "version": 2,
+          "confirmedNotIntegrated": true
+        }
+      },
+      "ProcessingResult": {
+        "type": "object",
+        "properties": {
+          "processed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "succeeded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "processed",
+          "succeeded",
+          "failed"
+        ],
+        "example": {
+          "processed": 2,
+          "succeeded": 1,
+          "failed": 1
+        }
+      },
+      "OrderError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "VALIDATION_ERROR",
+              "INVALID_REQUEST",
+              "DUPLICATE_EXTERNAL_ID",
+              "ORDER_NOT_FOUND",
+              "ORDER_CONFLICT"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Pode ser vazio. No retry, nomes como order.customerName."
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "timestamp",
+          "fields"
+        ],
+        "example": {
+          "code": "VALIDATION_ERROR",
+          "message": "Dados do pedido inválidos",
+          "timestamp": "2026-09-21T12:00:00Z",
+          "fields": {
+            "customerName": "Informe o nome do cliente"
+          }
+        }
+      },
+      "ErpAcceptance": {
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACCEPTED"
+            ]
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "externalId",
+          "status",
+          "processedAt"
+        ],
+        "example": {
+          "externalId": "ERP-DEMO-001",
+          "status": "ACCEPTED",
+          "processedAt": "2026-09-21T12:00:00Z"
+        }
+      },
+      "ErpError": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "status",
+          "message",
+          "timestamp"
+        ],
+        "example": {
+          "status": 500,
+          "message": "O ERP não conseguiu processar o pedido",
+          "timestamp": "2026-09-21T12:00:00Z"
+        }
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UP"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "example": {
+          "status": "UP"
+        }
+      }
+    }
+  }
+}

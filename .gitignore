@@ -9,3 +9,7 @@
 .env
 .m2/
 *.log
+
+# Documentação pública do projeto
+!/README.md
+!/docs/*.md
