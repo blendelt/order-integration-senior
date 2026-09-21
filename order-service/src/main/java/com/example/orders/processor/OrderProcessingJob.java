@@ -22,7 +22,7 @@ public class OrderProcessingJob {
     public void processPending() {
         ProcessingResult result = processor.processPending();
         if (result.processed() > 0) {
-            LOGGER.info("Scheduled processing finished processed={} succeeded={} failed={}",
+            LOGGER.info("Processamento agendado concluído processados={} sucessos={} falhas={}",
                     result.processed(), result.succeeded(), result.failed());
         }
     }

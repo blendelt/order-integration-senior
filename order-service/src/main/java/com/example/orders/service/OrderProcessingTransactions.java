@@ -35,6 +35,6 @@ public class OrderProcessingTransactions {
 
     private Order findOrder(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Processing order not found: " + id));
+                .orElseThrow(() -> new IllegalStateException("Pedido em processamento não encontrado: " + id));
     }
 }

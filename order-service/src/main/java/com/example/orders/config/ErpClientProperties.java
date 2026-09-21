@@ -12,13 +12,13 @@ public record ErpClientProperties(
 ) {
     public ErpClientProperties {
         if (baseUrl == null || baseUrl.isBlank()) {
-            throw new IllegalArgumentException("ERP base URL is required");
+            throw new IllegalArgumentException("A URL base do ERP é obrigatória");
         }
         if (connectTimeout == null || connectTimeout.isNegative() || connectTimeout.isZero()) {
-            throw new IllegalArgumentException("ERP connect timeout must be positive");
+            throw new IllegalArgumentException("O tempo limite de conexão com o ERP deve ser positivo");
         }
         if (readTimeout == null || readTimeout.isNegative() || readTimeout.isZero()) {
-            throw new IllegalArgumentException("ERP read timeout must be positive");
+            throw new IllegalArgumentException("O tempo limite de leitura da resposta do ERP deve ser positivo");
         }
     }
 }

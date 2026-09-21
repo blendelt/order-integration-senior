@@ -11,10 +11,10 @@ public record ErpSimulationProperties(
 ) {
     public ErpSimulationProperties {
         if (minimumDelayMs < 0 || maximumDelayMs < minimumDelayMs || maximumDelayMs == Long.MAX_VALUE) {
-            throw new IllegalArgumentException("Invalid ERP simulation delay range");
+            throw new IllegalArgumentException("Intervalo de atraso da simulação do ERP inválido");
         }
         if (!Double.isFinite(randomFailureRate) || randomFailureRate < 0 || randomFailureRate > 1) {
-            throw new IllegalArgumentException("ERP random failure rate must be between 0 and 1");
+            throw new IllegalArgumentException("A taxa de falhas aleatórias do ERP deve estar entre 0 e 1");
         }
     }
 }

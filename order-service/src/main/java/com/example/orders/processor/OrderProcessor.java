@@ -34,9 +34,9 @@ public class OrderProcessor {
         this.executor = executor;
     }
 
-    // No transaction here: HTTP must not hold a database connection or row lock.
+    // Não precisa de um transactional porque o HTTP não deve manter uma conexão com o banco.
     public synchronized ProcessingResult processPending() {
-        // One admitted batch per instance bounds the shared queue. Database locks protect other instances.
+        // A fila compartilhada é limitada a um lote liberado por instância, os bloqueios do banco protegem as outras instâncias.
         List<CompletableFuture<ProcessingResult>> tasks = new ArrayList<>();
         RuntimeException submissionFailure = null;
         for (int i = 0; i < properties.batchSize(); i++) {
@@ -47,7 +47,7 @@ public class OrderProcessor {
                 break;
             }
         }
-        // Drain accepted work even if shutdown rejects a submission or one worker fails.
+        //  Processa o trabalho aceito, mesmo que o sistema rejeite um envio ou um trabalhador falhe.
         try {
             CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new)).join();
         } catch (CompletionException exception) {
@@ -79,13 +79,12 @@ public class OrderProcessor {
         } catch (ErpClientException exception) {
             // Do not persist response bodies, customer data or arbitrary exception messages.
             transactions.fail(order.getId(), exception.getFailure().safeMessage());
-            LOGGER.warn("Order integration failed id={} errorType={}",
+            LOGGER.warn("Falha na integração do pedido id={} tipoErro={}",
                     order.getId(), exception.getFailure().name());
             return new ProcessingResult(1, 0, 1);
         }
-        // A database failure here must not be misreported as an ERP failure.
         transactions.complete(order.getId());
-        LOGGER.info("Order integration completed id={}", order.getId());
+        LOGGER.info("Integração do pedido concluída id={}", order.getId());
         return new ProcessingResult(1, 1, 0);
     }
 }

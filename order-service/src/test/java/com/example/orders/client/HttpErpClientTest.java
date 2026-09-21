@@ -76,7 +76,7 @@ class HttpErpClientTest {
 
         assertThatThrownBy(() -> client.send(order("FAIL-12345")))
                 .isInstanceOf(ErpClientException.class)
-                .hasMessage("ERP returned HTTP 500");
+                .hasMessage("ERP retornou o status HTTP 500");
         server.verify();
     }
 
@@ -93,7 +93,7 @@ class HttpErpClientTest {
 
         assertThatThrownBy(() -> client.send(order("ERP-12345")))
                 .isInstanceOf(ErpClientException.class)
-                .hasMessage("ERP returned an unexpected externalId");
+                .hasMessage("ERP retornou um identificador externo diferente do enviado");
         server.verify();
     }
 
@@ -104,7 +104,7 @@ class HttpErpClientTest {
 
         assertThatThrownBy(() -> client.send(order("ERP-12345")))
                 .isInstanceOf(ErpClientException.class)
-                .hasMessage("ERP returned an empty response");
+                .hasMessage("ERP retornou uma resposta vazia");
         server.verify();
     }
 
@@ -130,7 +130,7 @@ class HttpErpClientTest {
                 .andRespond(withSuccess("{invalid", MediaType.APPLICATION_JSON));
         assertThatThrownBy(() -> client.send(order("ERP-12345")))
                 .isInstanceOf(ErpClientException.class)
-                .hasMessage("ERP returned an unreadable response");
+                .hasMessage("ERP retornou uma resposta que não pôde ser interpretada");
         server.verify();
     }
 
@@ -139,7 +139,7 @@ class HttpErpClientTest {
         server.expect(requestTo("http://erp-service:8081/erp/orders"))
                 .andRespond(withSuccess("{\"externalId\":\"ERP-12345\",\"status\":\"REJECTED\"}", MediaType.APPLICATION_JSON));
         assertThatThrownBy(() -> client.send(order("ERP-12345")))
-                .isInstanceOf(ErpClientException.class).hasMessage("ERP did not accept the order");
+                .isInstanceOf(ErpClientException.class).hasMessage("ERP não aceitou o pedido");
         server.verify();
     }
 }

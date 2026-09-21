@@ -42,31 +42,31 @@ public class HttpErpClient implements ErpClient {
                     .body(ErpOrderResponse.class);
 
             validateResponse(order, response);
-            LOGGER.info("ERP acceptance received id={}", order.getId());
+            LOGGER.info("Aceitação do ERP recebida para o pedido id={}", order.getId());
             return response;
         } catch (RestClientResponseException exception) {
-            LOGGER.warn("ERP rejected order id={} status={}",
+            LOGGER.warn("ERP rejeitou o pedido id={} status={}",
                     order.getId(), exception.getStatusCode().value());
             throw new ErpClientException(
-                    ErpFailure.HTTP_ERROR, "ERP returned HTTP " + exception.getStatusCode().value(), exception);
+                    ErpFailure.HTTP_ERROR, "ERP retornou o status HTTP " + exception.getStatusCode().value(), exception);
         } catch (ResourceAccessException exception) {
-            LOGGER.warn("ERP unavailable for id={}", order.getId());
+            LOGGER.warn("ERP indisponível para o pedido id={}", order.getId());
             ErpFailure failure = isTimeout(exception) ? ErpFailure.TIMEOUT : ErpFailure.UNAVAILABLE;
             throw new ErpClientException(failure, failure.safeMessage(), exception);
         } catch (RestClientException exception) {
-            throw new ErpClientException(ErpFailure.INVALID_RESPONSE, "ERP returned an unreadable response", exception);
+            throw new ErpClientException(ErpFailure.INVALID_RESPONSE, "ERP retornou uma resposta que não pôde ser interpretada", exception);
         }
     }
 
     private void validateResponse(Order order, ErpOrderResponse response) {
         if (response == null) {
-            throw new ErpClientException(ErpFailure.INVALID_RESPONSE, "ERP returned an empty response", null);
+            throw new ErpClientException(ErpFailure.INVALID_RESPONSE, "ERP retornou uma resposta vazia", null);
         }
         if (!order.getExternalId().equals(response.externalId())) {
-            throw new ErpClientException(ErpFailure.INVALID_RESPONSE, "ERP returned an unexpected externalId", null);
+            throw new ErpClientException(ErpFailure.INVALID_RESPONSE, "ERP retornou um identificador externo diferente do enviado", null);
         }
         if (!"ACCEPTED".equals(response.status())) {
-            throw new ErpClientException(ErpFailure.INVALID_RESPONSE, "ERP did not accept the order", null);
+            throw new ErpClientException(ErpFailure.INVALID_RESPONSE, "ERP não aceitou o pedido", null);
         }
     }
 

@@ -1,0 +1,14 @@
+services:
+  order-service:
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+      ORDER_PROCESSING_SCHEDULING_ENABLED: "false"
+      ERP_READ_TIMEOUT: "300s"
+    ports:
+      - "127.0.0.1:5005:5005"
+
+  erp-service:
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    ports:
+      - "127.0.0.1:5006:5005"

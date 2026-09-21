@@ -38,7 +38,7 @@ class OrderProcessorTest {
         when(transactions.reserveNext()).thenReturn(Optional.of(first), Optional.of(second));
         when(client.send(first)).thenThrow(new ErpClientException("sensitive payload"));
         assertThat(processor.processPending()).isEqualTo(new ProcessingResult(2, 1, 1));
-        verify(transactions).fail(1L, "ERP integration failed; check service logs");
+        verify(transactions).fail(1L, "Falha na integração com o ERP; consulte os logs do serviço");
         verify(transactions).complete(2L);
         verify(transactions, times(2)).reserveNext();
         verify(transactions, never()).complete(1L);

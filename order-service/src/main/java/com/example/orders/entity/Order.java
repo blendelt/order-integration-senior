@@ -94,13 +94,13 @@ public class Order {
     public void failProcessing(String message) {
         requireStatus(OrderStatus.PROCESSING);
         status = OrderStatus.ERROR;
-        String safeMessage = message == null ? "ERP integration failed" : message;
+        String safeMessage = message == null ? "Falha na integração com o ERP" : message;
         lastError = safeMessage.substring(0, Math.min(safeMessage.length(), 1000));
     }
 
     private void requireStatus(OrderStatus expected) {
         if (status != expected) {
-            throw new IllegalStateException("Expected order status " + expected + " but was " + status);
+            throw new IllegalStateException("Status esperado para o pedido: " + expected + "; status atual: " + status);
         }
     }
 

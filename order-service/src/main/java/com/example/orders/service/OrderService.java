@@ -35,7 +35,7 @@ public class OrderService {
         try {
             Order order = new Order(request.externalId(), request.customerName(), request.totalValue());
             Order saved = orderRepository.saveAndFlush(order);
-            LOGGER.info("Order creation prepared id={}", saved.getId());
+            LOGGER.info("Criação do pedido preparada id={}", saved.getId());
             return OrderResponse.from(saved);
         } catch (DataIntegrityViolationException exception) {
             Throwable cause = exception;
@@ -84,7 +84,7 @@ public class OrderService {
             }
             throw exception;
         }
-        LOGGER.info("Order retry prepared id={} status={} attempts={}", order.getId(), order.getStatus(), order.getAttemptCount());
+        LOGGER.info("Reenvio do pedido preparado id={} status={} tentativas={}", order.getId(), order.getStatus(), order.getAttemptCount());
         return OrderResponse.from(order);
     }
 }

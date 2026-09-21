@@ -29,6 +29,6 @@ orders:
   processing:
     batch-size: ${ORDER_PROCESSING_BATCH_SIZE:20}
     workers: ${ORDER_PROCESSING_WORKERS:4}
-    scheduling-enabled: ${ORDER_PROCESSING_SCHEDULING_ENABLED:true}
+    scheduling-enabled: ${ORDER_PROCESSING_SCHEDULING_ENABLED:false}
     fixed-delay: ${ORDER_PROCESSING_FIXED_DELAY:60000}
     initial-delay: ${ORDER_PROCESSING_INITIAL_DELAY:60000}

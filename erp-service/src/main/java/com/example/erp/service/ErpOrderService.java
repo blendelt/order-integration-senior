@@ -23,7 +23,7 @@ public class ErpOrderService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ErpOrderService.class);
 
     private final ErpSimulationProperties properties;
-    // Simulator-only deduplication. Production requires durable storage.
+
     private final ConcurrentHashMap<String, AcceptedOrder> accepted = new ConcurrentHashMap<>();
     private record AcceptedOrder(ErpOrderRequest request, ErpOrderResponse response) {}
 
@@ -37,7 +37,7 @@ public class ErpOrderService {
                 if (!previous.request().customerName().equals(request.customerName())
                         || previous.request().totalValue().compareTo(request.totalValue()) != 0) {
                     throw new ResponseStatusException(
-                            HttpStatus.CONFLICT, "Identifier already accepted with different data");
+                            HttpStatus.CONFLICT, "Identificador já aceito com dados diferentes");
                 }
                 return previous;
             }
@@ -49,11 +49,11 @@ public class ErpOrderService {
         simulateDelay();
 
         if (mustFail(request.externalId())) {
-            LOGGER.warn("ERP simulation failed for reference={}", org.springframework.util.DigestUtils.md5DigestAsHex(request.externalId().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-            throw new ErpProcessingException("ERP could not process order " + request.externalId());
+            LOGGER.warn("Falha na simulação do ERP para a referência={}", org.springframework.util.DigestUtils.md5DigestAsHex(request.externalId().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            throw new ErpProcessingException("O ERP não conseguiu processar o pedido " + request.externalId());
         }
 
-        LOGGER.info("ERP simulation processed reference={}", org.springframework.util.DigestUtils.md5DigestAsHex(request.externalId().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        LOGGER.info("Simulação do ERP concluída para a referência={}", org.springframework.util.DigestUtils.md5DigestAsHex(request.externalId().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         return new ErpOrderResponse(request.externalId(), "ACCEPTED", OffsetDateTime.now());
     }
 
@@ -66,7 +66,7 @@ public class ErpOrderService {
             Thread.sleep(delay);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new ErpProcessingException("ERP processing was interrupted");
+            throw new ErpProcessingException("O processamento do ERP foi interrompido");
         }
     }
 
