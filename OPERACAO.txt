@@ -1,6 +1,27 @@
-REQUISITOS: Java 17, Maven 3.9 e Docker para PostgreSQL/testes de integração.
+REQUISITOS: Docker Desktop para executar todos os serviços. Java 17 e Maven 3.9 para execução local/testes.
 Execute os comandos na raiz deste repositório.
 
+EXECUÇÃO COMPLETA EM DOCKER (sem iniciar os Runs do IntelliJ):
+  docker compose up --build -d
+  docker compose ps
+  docker compose logs -f frontend order-service erp-service
+
+Frontend Docker: http://localhost:8088
+API Docker: http://localhost:18080/orders
+ERP Docker: http://localhost:18081/health
+PostgreSQL: localhost:5434 / orders_incremental / orders / orders
+FRONTEND_PORT, ORDER_HTTP_PORT e ERP_HTTP_PORT permitem alterar as portas publicadas.
+Os containers usam os nomes postgres e erp-service para se comunicar, não localhost.
+O scheduler continua dentro do Order Service. Angular é servido pelo Nginx no quarto container.
+O primeiro build baixa Java/Maven, Node e dependências; não exige JDK, Node ou npm no host.
+O build das imagens não executa testes; use os comandos de validação abaixo.
+
+Parar os serviços mantendo os dados:
+  docker compose down
+Não use down -v se quiser preservar os pedidos. O volume existente foi mantido.
+
+EXECUÇÃO LOCAL ALTERNATIVA (IntelliJ/Maven):
+Pare os serviços Java em Docker antes para não executar dois schedulers no mesmo banco.
 Banco isolado (não reutiliza o volume do projeto anterior):
   docker compose up -d postgres
   localhost:5434 / orders_incremental / usuário orders / senha orders (somente desenvolvimento)
@@ -33,3 +54,8 @@ V2 recusa um banco antigo que contenha externalId duplicado; não elimina dados 
 Validação no ambiente de construção: a execução Maven foi tentada, mas o compilador encontrou
 AccessDeniedException ao fechar dependências no Windows. Docker também estava indisponível.
 Essas falhas de ambiente NÃO equivalem a testes aprovados. Execute os comandos acima ou a CI.
+
+O frontend encaminha /orders (incluindo /process e /{id}/retry) para order-service:8080.
+Não é necessário executar npm start ou os Runs Java para usar a aplicação em Docker.
+Se houver containers do projeto antigo nas portas 18080, 18081 ou 8088, pare-os antes.
+Após alterações no código, execute docker compose up --build -d novamente.

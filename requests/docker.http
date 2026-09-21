@@ -1,0 +1,16 @@
+@api = http://localhost:18080
+
+### Create an order in the Docker environment.
+POST {{api}}/orders
+Content-Type: application/json
+
+{"externalId":"DOCKER-001","customerName":"Cliente demonstração","totalValue":125.50}
+
+### Process pending orders (scheduler may have processed them already).
+POST {{api}}/orders/process
+
+### List orders.
+GET {{api}}/orders
+
+### ERP health.
+GET http://localhost:18081/health

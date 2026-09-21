@@ -1,0 +1,8 @@
+target/
+.git/
+.idea/
+.m2/
+.m2-test/
+*.md
+*.log
+.env

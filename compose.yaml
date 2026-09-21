@@ -14,5 +14,60 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  erp-service:
+    build: ./erp-service
+    ports:
+      - "127.0.0.1:${ERP_HTTP_PORT:-18081}:8081"
+    environment:
+      ERP_MINIMUM_DELAY_MS: ${ERP_MINIMUM_DELAY_MS:-500}
+      ERP_MAXIMUM_DELAY_MS: ${ERP_MAXIMUM_DELAY_MS:-2000}
+      ERP_FAILURE_PREFIX: ${ERP_FAILURE_PREFIX:-FAIL-}
+      ERP_RANDOM_FAILURE_RATE: ${ERP_RANDOM_FAILURE_RATE:-0.0}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "127.0.0.1:${ORDER_HTTP_PORT:-18080}:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/orders_incremental
+      DB_USERNAME: orders
+      DB_PASSWORD: orders
+      ERP_BASE_URL: http://erp-service:8081
+      ERP_CONNECT_TIMEOUT: ${ERP_CONNECT_TIMEOUT:-2s}
+      ERP_READ_TIMEOUT: ${ERP_READ_TIMEOUT:-3s}
+      ORDER_PROCESSING_BATCH_SIZE: ${ORDER_PROCESSING_BATCH_SIZE:-20}
+      ORDER_PROCESSING_WORKERS: ${ORDER_PROCESSING_WORKERS:-4}
+      ORDER_PROCESSING_SCHEDULING_ENABLED: ${ORDER_PROCESSING_SCHEDULING_ENABLED:-true}
+      ORDER_PROCESSING_FIXED_DELAY: ${ORDER_PROCESSING_FIXED_DELAY:-60000}
+      ORDER_PROCESSING_INITIAL_DELAY: ${ORDER_PROCESSING_INITIAL_DELAY:-60000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      erp-service:
+        condition: service_healthy
+    # Allow in-flight work to finish before Docker sends SIGKILL.
+    stop_grace_period: 130s
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/orders"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 6
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8088}:80"
+    depends_on:
+      order-service:
+        condition: service_healthy
+
 volumes:
   incremental-orders:

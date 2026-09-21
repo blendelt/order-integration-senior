@@ -1,0 +1,4 @@
+{
+  "/orders": { "target": "http://localhost:8080", "secure": false, "timeout": 120000 },
+  "/orders/**": { "target": "http://localhost:8080", "secure": false, "timeout": 120000 }
+}

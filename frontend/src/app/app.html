@@ -1,0 +1,223 @@
+<header class="topbar">
+  <a class="brand" href="/" aria-label="Senior — Pedidos Integrados"
+    ><span class="logo">senior<span>▰</span></span
+    ><span class="divider">/</span><small>Pedidos Integrados</small></a
+  >
+  <span class="workspace">INTEGRAÇÃO COM ERP</span>
+</header>
+<main>
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">GESTÃO DE PEDIDOS</p>
+      <h1>Pedidos Integrados</h1>
+      <p class="subtitle">Do cadastro à confirmação no ERP. Acompanhe tudo por aqui.</p>
+    </div>
+    <span class="live">● Atualização a cada 5 segundos</span>
+  </div>
+  <section class="metrics" aria-label="Resumo de pedidos">
+    <article>
+      <span>Pendentes</span><strong>{{ pending() }}</strong
+      ><small>Aguardando integração</small>
+    </article>
+    <article>
+      <span>Em processamento</span><strong>{{ active() }}</strong
+      ><small>Envio em andamento</small>
+    </article>
+    <article>
+      <span>Integrados</span><strong>{{ success() }}</strong
+      ><small>Confirmados pelo ERP</small>
+    </article>
+    <article>
+      <span>Com erro</span><strong>{{ failed() }}</strong
+      ><small>Precisam de atenção</small>
+    </article>
+  </section>
+  @if (actionError()) {
+    <div class="alert error" role="alert">{{ actionError() }}</div>
+  }
+  @if (notice()) {
+    <div class="alert success" role="status">{{ notice() }}</div>
+  }
+  <div class="layout">
+    <section class="card registration">
+      <div class="section-heading">
+        <span class="step">01</span>
+        <div>
+          <h2>{{ editing() ? 'Editar e reprocessar' : 'Novo pedido' }}</h2>
+          <p>Preencha os dados para começar.</p>
+        </div>
+      </div>
+      <form [formGroup]="form" (ngSubmit)="create()">
+        <fieldset [disabled]="saving()">
+          <label for="externalId">Identificador externo</label
+          ><input
+            id="externalId"
+            formControlName="externalId"
+            (input)="clearFieldError('externalId')"
+            [attr.aria-invalid]="!!fieldError('externalId')"
+            aria-describedby="externalId-error"
+            placeholder="Ex.: ERP-001"
+            maxlength="100"
+          /><small id="external-help">Use um identificador único por pedido.</small>
+          <p class="field-error" id="externalId-error" aria-live="polite">
+            {{ fieldError('externalId') }}
+          </p>
+          <label for="customerName">Cliente</label
+          ><input
+            id="customerName"
+            formControlName="customerName"
+            (input)="clearFieldError('customerName')"
+            [attr.aria-invalid]="!!fieldError('customerName')"
+            aria-describedby="customerName-error"
+            placeholder="Nome ou razão social"
+            maxlength="200"
+          />
+          <p class="field-error" id="customerName-error" aria-live="polite">
+            {{ fieldError('customerName') }}
+          </p>
+          <label for="totalValue">Valor total</label>
+          <div class="money">
+            <span>R$</span
+            ><input
+              id="totalValue"
+              formControlName="totalValue"
+              (input)="clearFieldError('totalValue')"
+              [attr.aria-invalid]="!!fieldError('totalValue')"
+              aria-describedby="totalValue-error"
+              inputmode="decimal"
+              placeholder="0,00"
+            />
+          </div>
+          <small id="value-help">Até 12 dígitos inteiros e 2 casas decimais.</small>
+          <p class="field-error" id="totalValue-error" aria-live="polite">
+            {{ fieldError('totalValue') }}
+          </p>
+          @if (editing()) {
+            <div class="alert error">
+              Antes de alterar ou reenviar, confirme no ERP que este pedido não foi integrado.
+              Alterar o identificador de um pedido já aceito pode duplicar a operação.
+            </div>
+            <label
+              ><input
+                type="checkbox"
+                [checked]="confirmedNotIntegrated()"
+                (change)="
+                  confirmedNotIntegrated.set($any($event.target).checked); confirmationError.set('')
+                "
+                [disabled]="saving()"
+                style="width: auto"
+              />
+              Confirmei que o pedido não foi integrado no ERP.</label
+            >
+            <p class="field-error" role="alert">{{ confirmationError() }}</p>
+            <button type="button" class="secondary" (click)="cancelEdit()" [disabled]="saving()">
+              Cancelar edição
+            </button>
+          }
+          <button class="primary create-button" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Salvando…' : editing() ? 'Salvar e reenfileirar' : 'Cadastrar pedido' }}
+            <span aria-hidden="true">＋</span>
+          </button>
+        </fieldset>
+      </form>
+      <div class="hint">
+        O pedido será cadastrado como <b>pendente</b>. O envio pode ser iniciado aqui ou pelo
+        processamento automático.
+      </div>
+    </section>
+    <section class="card orders">
+      <div class="table-heading">
+        <div>
+          <h2>Acompanhamento</h2>
+          <p>{{ orders().length }} pedidos cadastrados</p>
+        </div>
+        <div class="actions">
+          <button type="button" class="secondary" (click)="refresh()" [disabled]="loading()">
+            {{ loading() ? 'Atualizando…' : 'Atualizar' }}</button
+          ><button
+            type="button"
+            class="primary"
+            (click)="process()"
+            [disabled]="processing() || !pending() || !!listError()"
+          >
+            {{ processing() ? 'Processando lote…' : 'Processar pendentes' }}
+          </button>
+        </div>
+      </div>
+      @if (listError()) {
+        <div class="alert error" role="alert">
+          {{ listError() }} Os dados exibidos podem estar desatualizados.
+        </div>
+      }
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Pedido / cliente</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Criado em</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (order of orders(); track order.id) {
+              <tr>
+                <td>
+                  <strong>{{ order.externalId }}</strong
+                  ><span class="customer">{{ order.customerName }}</span
+                  ><small>#{{ order.id }} · {{ order.attemptCount }} tentativa(s)</small>
+                </td>
+                <td class="amount">
+                  {{ order.totalValue | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+                </td>
+                <td>
+                  <span [class]="'badge ' + order.status">{{ labels[order.status] }}</span>
+                  @if (order.status === 'ERROR') {
+                    <small class="order-error">{{ errorMessage(order) }}</small>
+                    <button
+                      type="button"
+                      class="secondary"
+                      (click)="edit(order)"
+                      [disabled]="saving()"
+                    >
+                      Editar e reprocessar
+                    </button>
+                  }
+                </td>
+                <td class="date">
+                  {{ order.createdAt | date: 'dd/MM/yyyy'
+                  }}<small>{{ order.createdAt | date: 'HH:mm' }}</small>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty">
+                  <span class="empty-icon">↗</span>
+                  <h3>{{ loading() ? 'Carregando pedidos…' : 'Tudo começa com um pedido' }}</h3>
+                  <p>
+                    {{
+                      listError()
+                        ? 'Aguardando conexão com o serviço.'
+                        : 'Cadastre o primeiro pedido no formulário ao lado.'
+                    }}
+                  </p>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer">
+        <span>Horários no seu fuso local</span
+        ><span role="status">
+          @if (lastRefresh()) {
+            Atualizado às {{ lastRefresh() | date: 'HH:mm:ss' }}
+          }
+        </span>
+      </footer>
+    </section>
+  </div>
+  <footer class="page-footer">
+    Senior — Pedidos Integrados
+  </footer>
+</main>
