@@ -4,7 +4,7 @@ import com.example.orders.client.ErpClient;
 import com.example.orders.config.OrderProcessingProperties;
 import com.example.orders.dto.ProcessingResult;
 import com.example.orders.entity.Order;
-import org.springframework.web.client.RestClientException;
+import com.example.orders.exception.ErpClientException;
 import com.example.orders.service.OrderProcessingTransactions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,11 +76,11 @@ public class OrderProcessor {
         Order order = reserved.get();
         try {
             erpClient.send(order);
-        } catch (RestClientException exception) {
+        } catch (ErpClientException exception) {
             // Do not persist response bodies, customer data or arbitrary exception messages.
-            transactions.fail(order.getId(), "ERP integration failed");
+            transactions.fail(order.getId(), exception.getFailure().safeMessage());
             LOGGER.warn("Order integration failed id={} errorType={}",
-                    order.getId(), "ERP_FAILURE");
+                    order.getId(), exception.getFailure().name());
             return new ProcessingResult(1, 0, 1);
         }
         // A database failure here must not be misreported as an ERP failure.

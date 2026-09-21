@@ -1,0 +1,16 @@
+name: Verify Java services
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Test both services including PostgreSQL concurrency
+        run: mvn --batch-mode --no-transfer-progress verify -Pintegration-tests

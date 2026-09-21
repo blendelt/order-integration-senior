@@ -14,7 +14,6 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
@@ -53,8 +52,6 @@ public class Order {
 
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
-
-
 
     @jakarta.persistence.Version
     private long version;
@@ -106,7 +103,6 @@ public class Order {
             throw new IllegalStateException("Expected order status " + expected + " but was " + status);
         }
     }
-
 
     public Long getId() { return id; }
     public String getExternalId() { return externalId; }

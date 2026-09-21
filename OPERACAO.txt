@@ -1,0 +1,35 @@
+REQUISITOS: Java 17, Maven 3.9 e Docker para PostgreSQL/testes de integração.
+Execute os comandos na raiz deste repositório.
+
+Banco isolado (não reutiliza o volume do projeto anterior):
+  docker compose up -d postgres
+  localhost:5434 / orders_incremental / usuário orders / senha orders (somente desenvolvimento)
+
+Em dois terminais:
+  mvn -pl erp-service spring-boot:run
+  mvn -pl order-service spring-boot:run
+
+API: http://localhost:8080/orders
+ERP: http://localhost:8081/health
+Exemplos HTTP: requests/orders.http
+
+Testes sem Docker:
+  mvn test
+Testes completos, incluindo claims, rollback e concorrência em PostgreSQL real:
+  mvn verify -Pintegration-tests
+O perfil integration-tests falha se Docker estiver indisponível; não ignora esses testes.
+
+Scheduler: ativo, intervalo e atraso inicial de 60 segundos.
+Desabilitar via ORDER_PROCESSING_SCHEDULING_ENABLED=false.
+ERP_BASE_URL, ERP_CONNECT_TIMEOUT e ERP_READ_TIMEOUT configuram a integração.
+ORDER_PROCESSING_BATCH_SIZE (1..100) e ORDER_PROCESSING_WORKERS (1..16) limitam o lote e os workers.
+
+Evolução: comentários em processor/package-info.java. API e scheduler no mesmo processo.
+Nenhum broker ou worker independente foi implementado.
+Falhas não são reenviadas automaticamente: timeout pode representar um efeito já realizado no ERP.
+PROCESSING após queda requer reconciliação; idempotência do simulador ERP é somente em memória.
+V2 recusa um banco antigo que contenha externalId duplicado; não elimina dados automaticamente.
+
+Validação no ambiente de construção: a execução Maven foi tentada, mas o compilador encontrou
+AccessDeniedException ao fechar dependências no Windows. Docker também estava indisponível.
+Essas falhas de ambiente NÃO equivalem a testes aprovados. Execute os comandos acima ou a CI.

@@ -1,0 +1,20 @@
+### Execute API at 8080, ERP at 8081 and PostgreSQL at 5434.
+@api = http://localhost:8080
+
+### Create a pending order (201); repeat to verify conflict (409).
+POST {{api}}/orders
+Content-Type: application/json
+
+{"externalId":"DEMO-001","customerName":"Cliente demonstração","totalValue":125.50}
+
+### Create a deterministic ERP failure.
+POST {{api}}/orders
+Content-Type: application/json
+
+{"externalId":"FAIL-DEMO-001","customerName":"Cliente demonstração","totalValue":25.00}
+
+### Process pending orders and wait for the batch summary.
+POST {{api}}/orders/process
+
+### Inspect status, attempt count and sanitized last error.
+GET {{api}}/orders
