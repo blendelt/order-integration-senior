@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: erp-service
+
+server:
+  port: ${SERVER_PORT:8081}
+
+erp:
+  simulation:
+    minimum-delay-ms: ${ERP_MINIMUM_DELAY_MS:500}
+    maximum-delay-ms: ${ERP_MAXIMUM_DELAY_MS:2000}
+    failure-prefix: ${ERP_FAILURE_PREFIX:FAIL-}
+    random-failure-rate: ${ERP_RANDOM_FAILURE_RATE:0.0}

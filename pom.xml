@@ -2,5 +2,5 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.example</groupId><artifactId>order-integration</artifactId><version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <modules><module>order-service</module></modules>
+  <modules><module>order-service</module><module>erp-service</module></modules>
 </project>
