@@ -268,4 +268,4 @@ Não use `docker compose down -v` para preservar os dados. Após alterar código
 
 ## Manter a documentação
 
-Ao alterar um controller, DTO, validação ou resposta de erro, atualize [o contrato](docs/openapi.json), [a referência](docs/API.md) e os exemplos afetados. A especificação é mantida no repositório; não é gerada automaticamente pelo Spring. `API.txt` é a referência anterior em texto simples.
+Ao alterar um controller, DTO, validação ou resposta de erro, atualize [o contrato](docs/openapi.json), [a referência](docs/API.md) e os exemplos afetados. A especificação é mantida no repositório; não é gerada automaticamente pelo Spring. `API.txt` disponibiliza uma versão de consulta em texto simples.
