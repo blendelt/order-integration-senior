@@ -56,6 +56,11 @@ public class Order {
 
 
 
+    @jakarta.persistence.Version
+    private long version;
+
+    public long getVersion() { return version; }
+
     protected Order() {
     }
 
