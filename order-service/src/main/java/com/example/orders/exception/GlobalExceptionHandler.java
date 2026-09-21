@@ -34,4 +34,12 @@ public class GlobalExceptionHandler {
         return new ApiError("INVALID_REQUEST", "JSON ou parâmetro inválido", OffsetDateTime.now(), Map.of());
     }
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    org.springframework.http.ResponseEntity<ApiError> handleStatus(org.springframework.web.server.ResponseStatusException exception) {
+        boolean missing = exception.getStatusCode().value() == 404;
+        return org.springframework.http.ResponseEntity.status(exception.getStatusCode()).body(
+                new ApiError(missing ? "ORDER_NOT_FOUND" : "ORDER_CONFLICT",
+                        missing ? "Pedido não encontrado" : "Pedido alterado ou não elegível para reprocessamento",
+                        OffsetDateTime.now(), Map.of()));
+    }
 }

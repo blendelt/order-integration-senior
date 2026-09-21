@@ -15,7 +15,8 @@ public record OrderResponse(
         int attemptCount,
         String lastError,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        long version
 ) {
     public static OrderResponse from(Order order) {
         return new OrderResponse(
@@ -27,7 +28,8 @@ public record OrderResponse(
                 order.getAttemptCount(),
                 order.getLastError(),
                 order.getCreatedAt(),
-                order.getUpdatedAt()
+                order.getUpdatedAt(),
+                order.getVersion()
         );
     }
 }

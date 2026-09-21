@@ -2,6 +2,7 @@ package com.example.orders.controller;
 
 import com.example.orders.dto.CreateOrderRequest;
 import com.example.orders.dto.OrderResponse;
+import com.example.orders.dto.RetryOrderRequest;
 import com.example.orders.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -21,4 +22,9 @@ public class OrderController {
     }
     @GetMapping
     public List<OrderResponse> list() { return service.findAll(); }
+
+    @PostMapping("/{id}/retry")
+    public OrderResponse retry(@PathVariable Long id, @Valid @RequestBody RetryOrderRequest request) {
+        return service.retry(id, request);
+    }
 }

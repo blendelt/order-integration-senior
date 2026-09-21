@@ -43,6 +43,7 @@ class OrderPostgresConcurrencyTest {
     }
 
     @Autowired OrderRepository repository;
+    @Autowired com.example.orders.service.OrderService orderService;
     @Autowired OrderProcessingTransactions transactions;
     @Autowired @Qualifier("orderExecutor") Executor executor;
     @MockitoBean ErpClient client;
@@ -51,6 +52,48 @@ class OrderPostgresConcurrencyTest {
     @BeforeEach
     void clearIsolatedDatabase() {
         repository.deleteAllInBatch();
+    }
+
+    @Test
+    void concurrentRetryAcceptsOnlyOneEditAndKeepsHistory() throws Exception {
+        Order original = new Order("FAIL-RETRY", "Original", BigDecimal.ONE);
+        original.startProcessing();
+        original.failProcessing("ERP failure");
+        Long id = repository.saveAndFlush(original).getId();
+        Order saved = repository.findById(id).orElseThrow();
+        var request = new com.example.orders.dto.RetryOrderRequest(
+                new com.example.orders.dto.CreateOrderRequest("RETRY-FIXED", "Corrected", BigDecimal.TEN),
+                saved.getVersion(), true);
+        var callers = Executors.newFixedThreadPool(2);
+        var start = new CountDownLatch(1);
+        Callable<Boolean> retry = () -> {
+            if (!start.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("Test timed out");
+            try {
+                orderService.retry(saved.getId(), request);
+                return true;
+            } catch (org.springframework.web.server.ResponseStatusException conflict) {
+                assertThat(conflict.getStatusCode().value()).isEqualTo(409);
+                return false;
+            }
+        };
+        try {
+            var first = callers.submit(retry);
+            var second = callers.submit(retry);
+            start.countDown();
+            boolean a = first.get(10, TimeUnit.SECONDS);
+            boolean b = second.get(10, TimeUnit.SECONDS);
+            assertThat(a ^ b).isTrue();
+            Order current = repository.findById(saved.getId()).orElseThrow();
+            assertThat(current.getStatus()).isEqualTo(OrderStatus.PENDING);
+            assertThat(current.getExternalId()).isEqualTo("RETRY-FIXED");
+            assertThat(current.getAttemptCount()).isEqualTo(1);
+            assertThat(current.getLastError()).isEqualTo("ERP failure");
+            assertThat(current.getCreatedAt()).isEqualTo(saved.getCreatedAt());
+            assertThat(current.getVersion()).isGreaterThan(saved.getVersion());
+        } finally {
+            start.countDown();
+            callers.shutdownNow();
+        }
     }
 
     @Test

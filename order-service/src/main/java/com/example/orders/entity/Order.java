@@ -104,6 +104,15 @@ public class Order {
         }
     }
 
+    public void reviseAndRetry(String externalId, String customerName, BigDecimal totalValue) {
+        requireStatus(OrderStatus.ERROR);
+        this.externalId = externalId;
+        this.customerName = customerName;
+        this.totalValue = totalValue;
+        status = OrderStatus.PENDING;
+        // Preserve history; the next claim increments attempts and clears the previous error.
+    }
+
     public Long getId() { return id; }
     public String getExternalId() { return externalId; }
     public String getCustomerName() { return customerName; }
