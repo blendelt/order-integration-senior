@@ -1,0 +1,52 @@
+@api = http://localhost:18080
+@erp = http://localhost:18081
+@id = 1
+@version = 2
+
+### Cadastro: 201 na primeira execução; 409 se repetir
+POST {{api}}/orders
+Content-Type: application/json
+
+{"externalId":"DEMO-001","customerName":"Cliente de teste","totalValue":125.50}
+
+### Validação: 400
+POST {{api}}/orders
+Content-Type: application/json
+
+{"externalId":"","customerName":"","totalValue":0}
+
+### Falha determinística no ERP: cadastro retorna 201; processamento resulta em ERROR
+POST {{api}}/orders
+Content-Type: application/json
+
+{"externalId":"FAIL-DEMO-001","customerName":"Cliente de teste","totalValue":25.50}
+
+### Processa TODOS os pendentes do lote; 200 e resumo
+POST {{api}}/orders/process
+
+### Copie o id e a version ATUAIS do pedido ERROR para as variáveis acima
+GET {{api}}/orders
+
+### Reenfileira: 200; exige conferência de que não houve integração no ERP
+POST {{api}}/orders/{{id}}/retry
+Content-Type: application/json
+
+{"order":{"externalId":"DEMO-CORRIGIDO-001","customerName":"Cliente de teste","totalValue":25.50},"version":{{version}},"confirmedNotIntegrated":true}
+
+### Envie novamente /orders/process e consulte o resultado
+POST {{api}}/orders/process
+
+### Saúde do ERP: 200
+GET {{erp}}/health
+
+### ERP direto: 200; repetir mantém processedAt, alterar dados retorna 409
+POST {{erp}}/erp/orders
+Content-Type: application/json
+
+{"externalId":"ERP-DEMO-001","customerName":"Cliente de teste","totalValue":10.50}
+
+### ERP falha controlada: 500
+POST {{erp}}/erp/orders
+Content-Type: application/json
+
+{"externalId":"FAIL-ERP-DEMO-001","customerName":"Cliente de teste","totalValue":10.50}
